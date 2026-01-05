@@ -46,7 +46,7 @@ fi
 
 output_file="$output_dir/$scene.mp4"
 
-cp "$output_file" ./
+cp "$output_file" ../
 echo "Copied to project root. 🪄"
 
 echo "Done. 💫"
