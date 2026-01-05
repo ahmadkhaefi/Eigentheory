@@ -2,6 +2,7 @@
 venv/
 .venv/
 *.pyc
+*.mp4
 
 src/media
 src/__pycache__/

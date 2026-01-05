@@ -131,7 +131,7 @@ class Transformation:
 
 class S(Scene):
     def rotate_coordinate_system(self, coordinate_system: Coordinate_System, angle: float):
-        return coordinate_system.axes \
+        return coordinate_system.mobjects \
             .animate \
             .rotate(angle, about_point=coordinate_system.origin) \
             .scale(1*(math.cos(angle)) ** (1 if angle < 0 else -1), about_point=coordinate_system.origin)
