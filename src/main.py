@@ -11,8 +11,8 @@ class S(Scene):
     D = np.array([[lambda_1, 0], [0, lambda_2]])
     P = np.array([[1, -1], [1, 1]])
 
-    def write_tex(self, axis, t):
-        text = MathText(t, color=BLACK)
+    def write_tex(self, axis, t, color):
+        text = MathTex(t, color=color)
         
         text \
             .next_to(axis, RIGHT) \
@@ -114,7 +114,11 @@ class S(Scene):
         self.add(axis_group)
 
         # write text
-        self.add(self.write_tex(ax, r"v \mapsto \begin{pmatrix} 1 & k \\ k & 1 \end{pmatrix} v"))
+        A_text = self \
+            .write_tex(ax, r"v \mapsto Av = \begin{pmatrix} 1 & k \\ k & 1 \end{pmatrix} v", GREEN) \
+            .to_edge(UP)
+
+        self.add(A_text)
 
         # draw eigen-lines
         line1 = ax.plot(lambda x: x, color=RED, stroke_opacity=0.75)
@@ -152,26 +156,44 @@ class S(Scene):
             *self.shear_gird(ax, self.A, A_grid),
             run_time=3
         )
+        P_inverse_text = self \
+            .write_tex(ax, r"v \mapsto P^{-1} v", RED) \
+            .next_to(A_text, DOWN) \
+            .shift(DOWN * 2)
 
         def rotate_coord_system(*, reverse=False):
             return (axis_group
                 .animate
                 .rotate(-PI/4 if reverse else PI/4, about_point=axis_origin)
                 .scale(1/math.sqrt(2) if reverse else math.sqrt(2), about_point=axis_origin))
-
+        
         # eigen coordinates
         self.play(
             rotate_coord_system(),
             FadeOut(line_group),
-            run_time=2
-        )
-        self.play(
-            *self.shear_gird(ax, self.D, D_grid),
+            FadeIn(P_inverse_text),
             run_time=3
         )
 
+        D_text = self \
+            .write_tex(ax, r"P^{-1} v \mapsto D\!\left(P^{-1} v\right)", RED) \
+            .next_to(P_inverse_text, DOWN) \
+            .shift(DOWN * 2)
+
+        self.play(
+            *self.shear_gird(ax, self.D, D_grid),
+            FadeIn(D_text),
+            run_time=3
+        )
+
+        P_text = self \
+            .write_tex(ax, r"D\!\left(P^{-1} v\right) \mapsto P\,D\!\left(P^{-1} v\right) = A v", RED) \
+            .next_to(D_text, DOWN) \
+            .shift(DOWN * 2)
+        
         self.play(
             rotate_coord_system(reverse=True),
+            FadeIn(P_text),
             run_time=2
         )
 
