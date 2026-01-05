@@ -49,19 +49,24 @@ class S(Scene):
          
 
     def create_grid(self, axis, color, n=5):
-        dots = VGroup(*[
-            Dot(point=axis.c2p(x, y), color=color, radius=0.075)
+        dots_map = {
+            (x, y): Dot(point=axis.c2p(x, y), radius=0.075, color=color)
             for y in range(-n, n + 1)
-            for x in range(-n, n + 1) if y != 0 or x !=0
-        ])
+            for x in range(-n, n + 1) if y != 0 or x != 0
+        }
+
+        dots = VGroup(*dots_map.values())
+
+        def c2p(x, y):
+            return dots_map[(x, y)].get_center()
 
         rect = always_redraw(
             lambda: Polygon(
             *[
-                dots[0].get_center(),
-                dots[10].get_center(),
-                dots[-1].get_center(),
-                dots[-11].get_center()
+                c2p(n, n),
+                c2p(-n, n),
+                c2p(-n, -n),
+                c2p(n, -n)
             ],
                 color=color,
                 fill_color=color,
@@ -69,23 +74,8 @@ class S(Scene):
                 stroke_width=0
             ).move_to(dots.get_center())
         )
-        
-        stain = always_redraw(
-            lambda: Polygon(
-                dots[103].get_center(),
-                dots[71].get_center(),
-                dots[74].get_center(),
-                dots[50].get_center(),
-                dots[16].get_center(),
-                dots[46].get_center(),
-                dots[69].get_center(),
-                color=color,
-                fill_color=color,
-                fill_opacity=0.5
-            )
-        )
 
-        return VGroup(rect, dots, stain)
+        return VGroup(rect, dots)
 
     def transform(self, M, x, y):
             v = np.array([[x], [y]])                
@@ -146,11 +136,11 @@ class S(Scene):
 
         self.add(coords)
 
-        A_rect, A_grid, A_stain = self.create_grid(ax, GREEN)
-        D_rect, D_grid, D_stain = self.create_grid(ax, RED)
+        A_rect, A_grid = self.create_grid(ax, GREEN)
+        D_rect, D_grid = self.create_grid(ax, RED)
 
         # animate dots/background rectangle
-        self.add(A_rect, A_grid, A_stain, D_rect, D_grid, D_stain)
+        self.add(A_rect, A_grid, D_rect, D_grid)
 
         self.play(
             *self.shear_gird(ax, self.A, A_grid),
