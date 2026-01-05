@@ -1,0 +1,52 @@
+#!/bin/zsh
+
+scene="S"
+quality="high"
+
+for arg in $@; do
+    case $arg in
+        --quality=*)
+            quality="${arg#*=}"
+            ;;
+        *)
+            if [[ -z "$scene" ]]; then
+                scene="$arg"
+            fi
+            ;;
+    esac
+done
+
+if [[ "$quality" == "high" ]]; then
+    manim_quality="-qh"
+elif [[ "$quality" == "low" ]]; then
+    manim_quality="-ql"
+else
+    echo "Invalid quality: $quality. Use 'high' or 'low'."
+    exit 1
+fi
+
+echo "Rendering scene '$scene' with $quality quality... 🪄"
+
+cd ./src
+
+output_dir="./media/videos/main"
+
+manim $manim_quality "main.py" "$scene" >/dev/null 2>&1
+
+if [[ $? -ne 0 ]]; then
+    echo "Rendering failed."
+    exit 1
+fi
+
+if [[ "$quality" == "low" ]]; then
+    output_dir="$output_dir/480p15"
+else
+    output_dir="$output_dir/1080p60"
+fi
+
+output_file="$output_dir/$scene.mp4"
+
+cp "$output_file" ./
+echo "Copied to project root. 🪄"
+
+echo "Done. 💫"
