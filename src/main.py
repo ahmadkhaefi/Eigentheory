@@ -1,56 +1,95 @@
 from manim import *
+from manim.scene.scene import Scene
+
 import numpy as np
+from numpy.typing import NDArray
+
 import math
 
-class S(Scene):
+class Coordinate_System:
+    def __init__(self, axes: Axes, *rest: VGroup):
+        self.axes = axes
+        self.mobjects = VGroup(self.axes, *rest)
+        self.origin = self.axes.get_origin()
+
+class Grid:
+    def __init__(self, background: Mobject, dots: VGroup):
+        self.background = background
+        self.dots = dots
+        self.mobjects = VGroup(background, dots)
+
+class Plot:
+    def __init__(self, plot: VGroup, label):
+        self.plot = plot
+        self.label = label
+        self.mobjects = VGroup(plot, label)
+
+
+class Transformation:
     k = 0.5
     lambda_1 = 1 + k
     lambda_2 = 1 - k
 
     A = np.array([[1, k], [k, 1]])
+    A_inverse = np.linalg.inv(A)
     D = np.array([[lambda_1, 0], [0, lambda_2]])
     P = np.array([[1, -1], [1, 1]])
 
-    def write_tex(self, axis, t, color):
-        text = MathTex(t, color=color)
-        
-        text \
-            .next_to(axis, RIGHT) \
-            .shift(RIGHT * 5) \
-            .scale(2.0)
+    def __init__(self):
+        self.__axes: Axes | None = None
 
-        return text
+        self.coordinate_system: Coordinate_System | None = None
+        self.grid: Grid | None = None
+        self.plot: Plot | None = None
 
-    def create_axis(self):
-        ax = Axes(
-            x_range=[-10, 11, 1],
-            y_range=[-10, 11, 1],
+    def create_coordinate_system(self, size: int, color=BLACK):
+        self.__axes = Axes(
+            x_range=[-size, size + 1, 1],
+            y_range=[-size, size + 1, 1],
             tips=True,
             axis_config={
                 "include_numbers": True,
-                "color": BLACK,
+                "color": color,
                 "decimal_number_config": {
-                    "color": BLACK,
+                    "color": color,
                     "num_decimal_places": 0
                 }
             },
-            x_length=20,
-            y_length=20
+            x_length=size * 2,
+            y_length=size * 2
         )
 
-        y_label = MathTex("y", color=BLACK)
-        y_label.next_to(ax.y_axis.get_top(), RIGHT, buff=0.75)
+        y_label = MathTex("y", color=color)
+        y_label.next_to(self.__axes.y_axis.get_top(), RIGHT, buff=0.75)
 
-        labels = ax.get_axis_labels(
-            x_label=MathTex("x", color=BLACK)
+        x_label = self.__axes.get_axis_labels(
+            x_label=MathTex("x", color=color)
         )
 
-        return VGroup(ax, y_label, labels)
-         
+        self.coordinate_system = Coordinate_System(
+            self.__axes,
+            VGroup(
+                x_label,
+                y_label
+            )
+        )
 
-    def create_grid(self, axis, color, n=5):
+    def create_plot(self):
+        line1 = self.__axes.plot(lambda x: x, color=RED, stroke_opacity=0.75)
+        line2 = self.__axes.plot(lambda x: -x, color=RED, stroke_opacity=0.75)
+        label = self.__axes.get_graph_label(
+            line1,
+            label=MathTex("|x| = |y|", color=RED),
+            x_val=6,
+            direction=UR,
+            buff=0.25,
+        )
+
+        self.plot = Plot(VGroup(line1, line2), label)
+    
+    def create_grid(self, color: ManimColor, n=5):
         dots_map = {
-            (x, y): Dot(point=axis.c2p(x, y), radius=0.075, color=color)
+            (x, y): Dot(point=self.__axes.c2p(x, y), radius=0.075, color=color)
             for y in range(-n, n + 1)
             for x in range(-n, n + 1) if y != 0 or x != 0
         }
@@ -60,7 +99,7 @@ class S(Scene):
         def c2p(x, y):
             return dots_map[(x, y)].get_center()
 
-        rect = always_redraw(
+        background = always_redraw(
             lambda: Polygon(
             *[
                 c2p(n, n),
@@ -75,116 +114,55 @@ class S(Scene):
             ).move_to(dots.get_center())
         )
 
-        return VGroup(rect, dots)
+        self.grid = Grid(background, dots)
+    
+    def transform(self, M: NDArray, x: float, y: float):
+            v = np.array([[x], [y]])
 
-    def transform(self, M, x, y):
-            v = np.array([[x], [y]])                
             return (M @ v).flatten()
     
-    def shear_gird(self, axis, M, grid):
+    def transform_grid(self, M: NDArray):
         return [
             dot.animate.move_to(
-                axis.c2p(*self.transform(M, *axis.p2c(dot.get_center())[:2]))
+                self.__axes.c2p(*self.transform(M, *self.__axes.p2c(dot.get_center())[:2]))
             )
-            for dot in grid
+            for dot in self.grid.dots
         ]
-    
-    def make_vector_arrow(self, ax, x, y, text, color=BLUE):
-        arrow = Arrow(color=color, stroke_width=20, start=ax.get_origin(), end=ax.c2p(x, y), buff=0).set_z_index(1)
-        label = MathTex(text,  color=color).next_to(arrow.get_end(), RIGHT + UP/2, buff=0.25).set_z_index(1)
 
-        return VGroup(arrow, label)
+class S(Scene):
+    def rotate_coordinate_system(self, coordinate_system: Coordinate_System, angle: float):
+        return coordinate_system.axes \
+            .animate \
+            .rotate(angle, about_point=coordinate_system.origin) \
+            .scale(1*(math.cos(angle)) ** (1 if angle < 0 else -1), about_point=coordinate_system.origin)
 
     def construct(self):
-        axis_group = self.create_axis()
-        ax = axis_group[0]
+        transformation = Transformation()
 
-        axis_origin = ax.get_origin()
+        transformation.create_coordinate_system(10)
+        transformation.create_grid(PURPLE, 5)
+        transformation.create_plot()
 
-        self.add(axis_group)
-
-        # write text
-        A_text = self \
-            .write_tex(ax, r"v \mapsto Av = \begin{pmatrix} 1 & k \\ k & 1 \end{pmatrix} v", GREEN) \
-            .to_edge(UP)
-
-        self.add(A_text)
-
-        # draw eigen-lines
-        line1 = ax.plot(lambda x: x, color=RED, stroke_opacity=0.75)
-        line2 = ax.plot(lambda x: -x, color=RED, stroke_opacity=0.75)
-        line_label = ax.get_graph_label(
-            line1,
-            label=MathTex("|x| = |y|"),
-            x_val=6,
-            direction=UR,
-            buff=0.25,
+        self.add(
+            transformation.grid.mobjects,
+            transformation.coordinate_system.mobjects,
+            transformation.plot.mobjects
         )
 
-        line_group = VGroup(line1, line2, line_label)
-
-        self.add(line_group)
-
-        # standard ordered basis arrows
-
-        coords = always_redraw(
-              lambda: VGroup(
-                *self.make_vector_arrow(ax, 1, 0, r"e_1 = (1, 0)", PURE_BLUE),
-                *self.make_vector_arrow(ax, 0, 1, r"e_2 = (0, 1)", PURE_RED)
-              )
-        )
-
-        self.add(coords)
-
-        A_rect, A_grid = self.create_grid(ax, GREEN)
-        D_rect, D_grid = self.create_grid(ax, RED)
-
-        # animate dots/background rectangle
-        self.add(A_rect, A_grid, D_rect, D_grid)
+        self.play(*transformation.transform_grid(Transformation.A), run_time=3)
+        self.play(*transformation.transform_grid(Transformation.A_inverse), run_time=3)
 
         self.play(
-            *self.shear_gird(ax, self.A, A_grid),
+            self.rotate_coordinate_system(transformation.coordinate_system, PI/4),
+            FadeOut(transformation.plot.mobjects),
             run_time=3
         )
-        P_inverse_text = self \
-            .write_tex(ax, r"v \mapsto P^{-1} v", RED) \
-            .next_to(A_text, DOWN) \
-            .shift(DOWN * 2)
 
-        def rotate_coord_system(*, reverse=False):
-            return (axis_group
-                .animate
-                .rotate(-PI/4 if reverse else PI/4, about_point=axis_origin)
-                .scale(1/math.sqrt(2) if reverse else math.sqrt(2), about_point=axis_origin))
+        self.play(*transformation.transform_grid(Transformation.D), run_time=3)
+
+        self.play(
+            self.rotate_coordinate_system(transformation.coordinate_system, -PI/4),
+            run_time=3
+        )
         
-        # eigen coordinates
-        self.play(
-            rotate_coord_system(),
-            FadeOut(line_group),
-            FadeIn(P_inverse_text),
-            run_time=3
-        )
-
-        D_text = self \
-            .write_tex(ax, r"P^{-1} v \mapsto D\!\left(P^{-1} v\right)", RED) \
-            .next_to(P_inverse_text, DOWN) \
-            .shift(DOWN * 2)
-
-        self.play(
-            *self.shear_gird(ax, self.D, D_grid),
-            FadeIn(D_text),
-            run_time=3
-        )
-
-        P_text = self \
-            .write_tex(ax, r"D\!\left(P^{-1} v\right) \mapsto P\,D\!\left(P^{-1} v\right) = A v", RED) \
-            .next_to(D_text, DOWN) \
-            .shift(DOWN * 2)
-        
-        self.play(
-            rotate_coord_system(reverse=True),
-            FadeIn(P_text),
-            run_time=2
-        )
-
         self.wait()
