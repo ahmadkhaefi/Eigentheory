@@ -28,6 +28,9 @@ jobs:
             libpangocairo-1.0-0  # Install pangocairo dependencies
           pip install manim
 
+      - name: Make script executable
+        run: chmod +x ./RUN
+
       - name: Render scene
         run: ./RUN
 
