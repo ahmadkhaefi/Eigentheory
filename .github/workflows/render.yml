@@ -25,7 +25,8 @@ jobs:
             texlive-fonts-extra \
             python3-pip \
             libpango1.0-dev \
-            libpangocairo-1.0-0  # Install pangocairo dependencies
+            libpangocairo-1.0-0 \
+            zsh
           pip install manim
 
       - name: Make script executable
@@ -33,6 +34,7 @@ jobs:
 
       - name: Render scene
         run: ./RUN
+        shell: zsh {0}
 
       - name: Upload video to release
         uses: softprops/action-gh-release@v2
