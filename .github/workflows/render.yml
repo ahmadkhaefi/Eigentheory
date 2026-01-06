@@ -15,21 +15,21 @@ jobs:
 
       - name: Install dependencies
         run: |
-          run: |
           sudo apt update
           sudo apt install -y \
             ffmpeg \
             libcairo2-dev \
-			      texlive \
+            texlive \
             texlive-latex-extra \
             texlive-fonts-recommended \
             texlive-fonts-extra \
             python3-pip \
-			      pangocairo
+            libpango1.0-dev \
+            libpangocairo-1.0-0  # Install pangocairo dependencies
           pip install manim
 
       - name: Render scene
-        run: ./src/RUN
+        run: ./RUN
 
       - name: Upload video to release
         uses: softprops/action-gh-release@v2
