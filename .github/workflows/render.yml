@@ -1,0 +1,34 @@
+name: Render & Release Manim
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          run: |
+          sudo apt update
+          sudo apt install -y \
+            ffmpeg \
+            libcairo2-dev \
+            texlive \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            python3-pip
+          pip install manim
+
+      - name: Render scene
+        run: ./src/RUN
+
+      - name: Upload video to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: S.mp4

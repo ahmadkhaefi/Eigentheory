@@ -50,3 +50,4 @@ cp "$output_file" ../
 echo "Copied to project root. 🪄"
 
 echo "Done. 💫"
+
