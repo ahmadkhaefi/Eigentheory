@@ -2,6 +2,8 @@ name: Render & Release Manim
 
 on:
   push:
+    branches:
+      - "main"
     tags:
       - "v*"
 
